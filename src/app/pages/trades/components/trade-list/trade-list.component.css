@@ -1,0 +1,4 @@
+.table-new {
+    max-height: calc(90vh - 90px);
+    overflow-y: scroll;
+}
