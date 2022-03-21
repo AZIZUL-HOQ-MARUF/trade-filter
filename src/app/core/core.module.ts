@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { AppRoutingModule } from './app-routing.module';
 import { StructureModule } from '../structure/structure.module';
 import { HttpClientModule } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
 
 @NgModule({
   imports: [
@@ -14,7 +15,8 @@ import { HttpClientModule } from '@angular/common/http';
   exports: [
     StructureModule,
     AppRoutingModule,
-    HttpClientModule
+    HttpClientModule,
+    RouterModule
   ]
 })
 export class CoreModule {
