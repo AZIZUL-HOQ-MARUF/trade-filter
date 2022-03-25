@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { catchError, of, Subject, switchMap, take } from 'rxjs';
+import { catchError, debounceTime, of, Subject, switchMap, take, takeUntil } from 'rxjs';
 import { TradeService } from '../../services/trade.service';
 
 @Component({
@@ -15,11 +15,44 @@ export class TradeListComponent implements OnInit, OnDestroy {
   public allDataList: any[] = [];
   public leagueList: any[] = [];
   public selectedLeague: string = '';
-
+  public $search: Subject<string> = new Subject();
   constructor(private _tradeService: TradeService) { }
 
   ngOnInit() {
     this._getAllData();
+    this._registerSearchKeyUp();
+  }
+
+  private _registerSearchKeyUp(): void {
+
+    this.$search
+    .pipe(
+      takeUntil(this._unsubscribeAll),
+      debounceTime(300)
+    ).subscribe((search: string) => {
+
+      if (!search) {
+        this.nextChangeId = this.allDataList[0]?.next_change_id || '';
+        return this.stashList = this.allDataList[0]?.stashes || [];
+      }
+
+      search = search.toLowerCase();
+  
+      this.stashList = [];
+      this.allDataList.forEach(data => {
+
+        this.stashList = [
+          ...this.stashList,
+          ...data.stashes.filter((stash: any) => {
+            let character: string = (stash.lastCharacterName || '').toLowerCase();
+            let matched: boolean = character.includes(search) || false;
+            return this.selectedLeague ? this.selectedLeague && matched : matched;
+          })
+        ];
+
+      });
+    });
+
   }
 
   private _getAllData(): void {
@@ -68,11 +101,13 @@ export class TradeListComponent implements OnInit, OnDestroy {
 
     this.stashList = [];
     this.allDataList.forEach(data => {
-      console.log(data.stashes.filter((stash: any) => stash.league == this.selectedLeague));
-      
       this.stashList = [...this.stashList, ...data.stashes.filter((stash: any) => stash.league == this.selectedLeague)];
     });
     
+  }
+
+  public onSearchKeyUp(event: any): void {
+    this.$search.next((event.target as HTMLInputElement).value);
   }
 
   ngOnDestroy(): void {
