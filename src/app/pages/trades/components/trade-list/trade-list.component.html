@@ -1,7 +1,21 @@
 <div>
   <div class="row mb-2">
     <div class="col-4"></div>
-    <div class="col-4"></div>
+    <div class="col-4">
+      <div class="row">
+        <div class="col-6 offset-6">
+          <div class="text-right">
+            <select name="filter" id="filter" class="form-control" [(ngModel)]="selectedLeague"
+              (ngModelChange)="onChangeFilter()">
+              <option [value]="''">Filter by leagues</option>
+              <ng-container *ngFor="let league of leagueList; trackBy: trackBy">
+                <option [value]="league.name">{{ league.name }}</option>
+              </ng-container>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="col-4">
       <div class="text-right">
         <input type="text" class="form-control" placeholder="Search..">

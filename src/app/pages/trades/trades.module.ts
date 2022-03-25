@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { TradeService } from './services/trade.service';
 import { TradeListComponent } from './components/trade-list/trade-list.component';
 import { RouterModule, Routes } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 
 const routes: Routes = [
   {
@@ -16,7 +17,8 @@ const routes: Routes = [
 @NgModule({
   imports: [
     CommonModule,
-    RouterModule.forChild(routes)
+    RouterModule.forChild(routes),
+    FormsModule
   ],
   declarations: [TradeListComponent],
   providers: [TradeService]
