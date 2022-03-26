@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { catchError, debounceTime, of, Subject, switchMap, take, takeUntil } from 'rxjs';
+import { catchError, debounceTime, interval, Observable, of, retry, Subject, switchMap, take, takeUntil } from 'rxjs';
 import { TradeService } from '../../services/trade.service';
 
 @Component({
@@ -16,11 +16,14 @@ export class TradeListComponent implements OnInit, OnDestroy {
   public leagueList: any[] = [];
   public selectedLeague: string = '';
   public $search: Subject<string> = new Subject();
+  private $_timer: Observable<number> = interval(30000); // 30 seconds interval
+
   constructor(private _tradeService: TradeService) { }
 
   ngOnInit() {
     this._getAllData();
     this._registerSearchKeyUp();
+    this._refreshData();
   }
 
   private _registerSearchKeyUp(): void {
@@ -55,6 +58,26 @@ export class TradeListComponent implements OnInit, OnDestroy {
 
   }
 
+  private _refreshData(): void {
+    this.$_timer
+    .pipe(
+      takeUntil(this._unsubscribeAll),
+      retry(3),
+      switchMap( _=> {
+        return this._getData(this.nextChangeId);
+      })
+    ).subscribe({
+      next: (response) => {
+        this._prepareTableData(response, true);
+      },
+      error: () => {
+        this.nextChangeId = '';
+        this.stashList = [];
+        this.leagueList = [];
+      },
+    });
+  }
+
   private _getAllData(): void {
     this._tradeService.getAllData()
       .pipe(
@@ -65,25 +88,11 @@ export class TradeListComponent implements OnInit, OnDestroy {
         switchMap((response) => {
           this.allDataList = response;
           if (response.length == 0) return of(null);
-          return this._tradeService.getAllData({ id: this.allDataList[0].next_change_id });
+          return this._getData(this.allDataList[0].next_change_id );
         })
       ).subscribe({
         next: (response) => {
-
-          this.stashList = response ? response[0].stashes : [];
-
-          this.leagueList = this.stashList
-            .filter(stash => stash.league)
-            .map(stash => stash.league);
-
-          this.leagueList = [...new Set(this.leagueList)].map((league, index) => {
-            return ({
-              id: index,
-              name: league
-            });
-          });
-
-          this.nextChangeId = response ? response[0].next_change_id : '';
+          this._prepareTableData(response);
         },
         error: () => {
           this.nextChangeId = '';
@@ -91,6 +100,30 @@ export class TradeListComponent implements OnInit, OnDestroy {
           this.leagueList = [];
         },
       });
+  }
+
+  private _getData(id: string): Observable<any> {
+    return this._tradeService.getAllData({ id });
+  }
+
+  private _prepareTableData(response: any[], isRefresh: boolean = false): void {
+
+    if (response.length == 0 && isRefresh) return;
+
+    this.stashList = response[0].stashes
+
+    this.leagueList = this.stashList
+      .filter(stash => stash.league)
+      .map(stash => stash.league);
+
+    this.leagueList = [...new Set(this.leagueList)].map((league, index) => {
+      return ({
+        id: index,
+        name: league
+      });
+    });
+
+    this.nextChangeId = response ? response[0].next_change_id : '';
   }
 
   public onChangeFilter(): void {
